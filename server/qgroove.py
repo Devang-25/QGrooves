@@ -28,7 +28,7 @@ def simulate_amplitude(circuit):
     pure_amplitude = [abs(i) for i in state_vector]
     max_amplitude = max(pure_amplitude)
 
-    modulated_amplitude = [0.25 + (i / max_amplitude) ** 2 for i in pure_amplitude]
+    modulated_amplitude = [0.05 + (i / max_amplitude) ** 2 for i in pure_amplitude]
     return modulated_amplitude
 
 
