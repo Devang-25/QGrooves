@@ -17,6 +17,8 @@ from qiskit import Aer, ClassicalRegister, execute, QuantumCircuit, QuantumRegis
 
 
 def simulate_amplitude(circuit):
+    """ Extract wave amplitudes from a quantum circuit simulation
+    """
 
     simulator = Aer.get_backend("statevector_simulator")
     job = execute(circuit, backend=simulator)
@@ -31,7 +33,7 @@ def simulate_amplitude(circuit):
 
 
 def write_music(amplitude_list):
-
+    """Generate music file from a modulated amplitude arrays"""
     power = 0
     while 2 ** power < len(amplitude_list):
         power += 1  # calculating 2^n = size of list
@@ -60,4 +62,11 @@ def save_to_db():
 
 
 def process_circuit(document_id, circuit_json):
-    pass
+
+    circuit = QuantumCircuit(5)
+    circuit.h(range(5))
+    circuit.cx(0, 1)
+    circuit.draw(output="mpl", filename="circuit_draw.png", scale=2.5)
+
+    write_music(simulate_amplitude(circuit))
+    execute_sonic()
