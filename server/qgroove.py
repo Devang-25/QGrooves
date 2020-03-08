@@ -1,5 +1,6 @@
 import base64
 import os
+import json
 import pymongo
 import subprocess
 import shlex
@@ -15,8 +16,18 @@ from qiskit import Aer, ClassicalRegister, execute, QuantumCircuit, QuantumRegis
 # db = mongo_client.groovedb
 
 
-def simulate_amplitude():
-    return [1] * 32
+def simulate_amplitude(circuit):
+
+    simulator = Aer.get_backend("statevector_simulator")
+    job = execute(circuit, backend=simulator)
+    result = job.result()
+    state_vector = result.get_statevector()
+
+    pure_amplitude = [abs(i) for i in state_vector]
+    max_amplitude = max(pure_amplitude)
+
+    modulated_amplitude = [0.25 + (i / max_amplitude) ** 2 for i in pure_amplitude]
+    return modulated_amplitude
 
 
 def write_music(amplitude_list):
