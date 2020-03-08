@@ -1,4 +1,5 @@
 import base64
+import bson
 import os
 import json
 import pymongo
@@ -8,12 +9,15 @@ import uuid
 
 from qiskit import Aer, ClassicalRegister, execute, QuantumCircuit, QuantumRegister
 
-# mongo_client = pymongo.MongoClient(
-#    "mongodb+srv://{}:{}@{}".format(
-#        os.getenv("MONGO_USER"), os.getenv("MONGO_PASSWORD"), os.getenv("MONGO_URL")
-#    )
-# )
-# db = mongo_client.groovedb
+from bson import BSON
+from bson.binary import Binary
+
+mongo_client = pymongo.MongoClient(
+    "mongodb+srv://{}:{}@{}".format(
+        os.getenv("MONGO_USER"), os.getenv("MONGO_PASSWORD"), os.getenv("MONGO_URL")
+    )
+)
+db = mongo_client.groovedb
 
 
 def simulate_amplitude(circuit):
@@ -57,16 +61,59 @@ def execute_sonic():
     return result
 
 
-def save_to_db():
-    pass
+def save_to_db(file_used, file_type, document_id):
+
+    coll = db.sample
+
+    with open(file_used, "rb") as f:
+        encoded = Binary(f.read())
+        n = len(encoded)
+        m = n // 16
+
+    x = 0
+    holder = 0
+
+    while x < (n / m):
+        sholder = encoded[int(holder) : min(int(holder + m), len(encoded))]
+        holder = holder + m
+        x = x + 1
+        data = {
+            "documentId": document_id,
+            "content": sholder,
+            "fileType": file_type,
+            "fileChunk": x,
+        }
+        coll.insert(data)
 
 
 def process_circuit(document_id, circuit_json):
 
-    circuit = QuantumCircuit(5)
-    circuit.h(range(5))
-    circuit.cx(0, 1)
-    circuit.draw(output="mpl", filename="circuit_draw.png", scale=2.5)
+    if circuit_json is not None:
 
-    write_music(simulate_amplitude(circuit))
-    execute_sonic()
+        circuit = QuantumCircuit(circuit_json["numQubits"])
+
+        if "append" in circuit_json:
+            for gate_type, target in circuit_json["append"]:
+                if gate_type == "x":
+                    circuit.x(target[0])
+                elif gate_type == "y":
+                    circuit.y(target[0])
+                elif gate_type == "z":
+                    circuit.z(target[0])
+                elif gate_type == "h":
+                    circuit.h(target[0])
+                elif gate_type == "cx":
+                    circuit.cx(target[0], target[1])
+                elif gate_type == "ccx":
+                    circuit.ccx(target[0], target[1], target[2])
+                elif gate_type == "barrier":
+                    write_music(simulate_amplitude(circuit))
+                    execute_sonic()
+                    save_to_db("circsoud.wav", "audio", document_id)
+
+        write_music(simulate_amplitude(circuit))
+        execute_sonic()
+        save_to_db("circsoud.wav", "audio", document_id)
+
+        circuit.draw(output="mpl", filename="circuit_draw.png", scale=3)
+        save_to_db("circuit_draw.png", "image", document_id)
