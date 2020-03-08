@@ -103,6 +103,9 @@ function create() {
         gameObject.x = dragX;
         gameObject.y = dragY;
     });
+
+    // 
+
     // adds background image
     var background = this.add.image(512, 384, 'BACKGROUND'); 
     
@@ -113,8 +116,6 @@ function create() {
             (this.add.image(BLOCK_SELECT_X + i*50,BLOCK_SELECT_Y,BLOCK_NAMES[i]),this,BLOCK_NAMES[i]));
     }    
     // title text
-    title = this.add.text(400, 100, "Q-Groov :-]", { fontFamily: '"Segoe UI"', fontSize: 50 });
-    
     
     // DEBUG: tracks mouse on-screen
     mouseTrack = this.add.text(150, 100, "", { fontFamily: '"Segoe UI"', fontSize: 50 });
@@ -192,7 +193,6 @@ function snapToGrid() {
 
 function update() {
     //SHOWS MOUSE COORDS IN SCREEEN FOR DEBUGGING
-    mouseTrack.text = `[${this.input.x} , ${this.input.y}]`;
 }
 
 function render() {
