@@ -23,8 +23,8 @@ const LINESPACE = 40;               // Space between grid-lines
 const ROWS = 6;                     // Number of rows in grid
 const COLUMNS = 20;                 // Number of columns in grid
 const TRIG_RADIUS = LINESPACE / 3;  // Radius at which a block is 'activated' (for placing blocks)
-const BLOCK_SELECT_Y = 150;
-const BLOCK_SELECT_x = 450;
+const BLOCK_SELECT_X = 150;
+const BLOCK_SELECT_Y = 450;
 //------------
 var vertLines = [];                 // Array of vertical lines
 var hozLines = [];                  // Array of horizontal lines
@@ -36,19 +36,24 @@ var grid = new Array(ROWS);         // STORES IMPORTANT INFORMATION ABOUT GRID! 
 for(let i = 0; i < grid.length; i++) {
     grid[i] = new Array(COLUMNS);
 }
+var blockList = [];
+var blockListCreated = [];
+var sceneRef;
+// string identifiers for each unique block-type
 const BLOCK_NAMES = ["CH","CRZ","H","ID","RX",
                      "RY","S","S_UP","T","T_UP",
-                     "U1","U2","U3","X","Y"];
+                     "U1","U2","U3","X","Y", "BCON"];
 
 // -- Elements which are draggable by the user
 class DragBlock {
-    constructor(img, curScene) {
+    constructor(img, curScene, id) {
             this.attachedTo = null;
             this.img = img;
             this.img.setInteractive();
             curScene.input.setDraggable(this.img);
             this.img.on('dragend', snapToGrid.bind(this));
-            this.id;
+            this.id = id;
+            this.created = false;
     }
 }
 
@@ -88,25 +93,25 @@ function preload() {
     this.load.image('U3', 'assets/icon_U3.png'); 
     this.load.image('X', 'assets/icon_X.png');
     this.load.image('Y', 'assets/icon_Z.png'); 
+    this.load.image('BCON', 'assets/icon_circle.png');
 }
 
 function create() {
+    sceneRef = this;
     // Enables blocks to be dragged -- DON'T TOUCH IT
     this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
         gameObject.x = dragX;
         gameObject.y = dragY;
     });
-
     // adds background image
-    this.add.image(512, 384, 'BACKGROUND'); 
-
+    var background = this.add.image(512, 384, 'BACKGROUND'); 
+    
+    refScene = this;
     // all of the possible blocks a user can drag
-    var blockList = [];
     for(let i = 0; i < BLOCK_NAMES.length; i++) {
         blockList.push(new DragBlock
-            (this.add.image(BLOCK_SELECT_Y + i*50,BLOCK_SELECT_x,BLOCK_NAMES[i]),this));
-    }
-
+            (this.add.image(BLOCK_SELECT_X + i*50,BLOCK_SELECT_Y,BLOCK_NAMES[i]),this,BLOCK_NAMES[i]));
+    }    
     // title text
     title = this.add.text(400, 100, "Q-Groov :-]", { fontFamily: '"Segoe UI"', fontSize: 50 });
     
@@ -137,25 +142,53 @@ function create() {
 
 // snaps the active block to the grid
 function snapToGrid() {
-
+    console.log(sceneRef);
     // if DragBlock is attached to a block, de-activate that block and detatch
     if(this.attachTo != null) {
         this.attachTo.active = false;
         this.attachTo = null;
     }
-
+    var breakLoop = false;
     for (let a = 0; a < ROWS; a++) {
         for (let b = 0; b < COLUMNS; b++) {
             if(grid[a][b].focus) {
-                this.img.x = grid[a][b].locX;
-                this.img.y = grid[a][b].locY;
-                this.attachTo = grid[a][b];
+                if(this.created) {
+                    this.img.x = grid[a][b].locX;
+                    this.img.y = grid[a][b].locY;
+                    this.attachTo = grid[a][b];
+                }
+                else blockListCreated.push(new DragBlock(sceneRef.add.image(grid[a][b].locX,grid[a][b].locY,this.id),sceneRef,this.id));          
                 grid[a][b].active = true;
-                return;
-           }
+                grid[a][b].blockType = this.id;
+                breakLoop = true;
+                break;
+                }
+            }
+            if(breakLoop) break;
+        }
+        
+        for(let i = 0; i < BLOCK_NAMES.length; i++) {
+            blockList[i].img.x = BLOCK_SELECT_X + i*50;
+            blockList[i].img.y = BLOCK_SELECT_Y;
+        }    
+
+        for (let y = 0; y < grid[0].length; y++) {
+            let entangList = [];
+            for (let x = 0; x < grid.length; x++) {
+                if(grid[x][y].blockType == "BCON") {
+                    entangList.push(grid[x][y]);
+                }
+            }
+            if(entangList.length > 1) {
+                console.log("Entangled!");
+                    sceneRef.add.line
+                    (0, 0, 
+                        entangList[0].locX, entangList[0].locY, 
+                        entangList[entangList.length - 1].locX, entangList[entangList.length - 1].locY
+                        , 0, hozLineColor);
+            }    
         }
     }
-}
 
 function update() {
     //SHOWS MOUSE COORDS IN SCREEEN FOR DEBUGGING
