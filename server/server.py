@@ -1,5 +1,8 @@
 #!flask/bin/python
+import uuid
+
 from flask import Flask, request
+from qgroove import process_circuit
 
 app = Flask(__name__)
 
@@ -9,10 +12,12 @@ def index():
     """Receives a request with a quantum circuit, generates music,
     and saves the .wav file to MongoDB
     """
-    user_id = request.args.get("userId")
     circuit_json = request.args.get("circuitJson")
+    document_id = str(uuid.uuid4())
 
-    return {"test": 0}
+    process_circuit(document_id, circuit_json)
+
+    return document_id
 
 
 if __name__ == "__main__":
